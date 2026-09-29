@@ -1,0 +1,55 @@
+@import 'katex/dist/katex.min.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #F5F1E8;
+  --bg-secondary: #F8F5EF;
+  --surface: #FFFFFF;
+  --surface-muted: #F0EBE0;
+  --color-primary: #F6D86B;
+  --color-secondary: #C8D4CF;
+  --text-primary: #141827;
+  --text-secondary: #5C6470;
+  --border: 226 32% 11%;
+  --input: 226 32% 11%;
+  --ring: 47 88% 69%;
+  --background: 44 38% 94%;
+  --foreground: 226 32% 11%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: #F5F1E8;
+  color: #141827;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+}
+
+/* Tactile Hard Offset Shadows (Neo-Brutalist) */
+.shadow-hard {
+  box-shadow: 0 3px 0 #141827;
+}
+
+.shadow-hard-sm {
+  box-shadow: 0 2px 0 #141827;
+}
+
+.shadow-hard-lg {
+  box-shadow: 0 5px 0 #141827;
+}
+
+.shadow-hard-xl {
+  box-shadow: 0 8px 0 #141827;
+}
+
+.active-press:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #141827 !important;
+}
