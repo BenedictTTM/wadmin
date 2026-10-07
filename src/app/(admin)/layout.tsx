@@ -16,6 +16,7 @@ import {
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
+  GraduationCap,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/button';
@@ -65,6 +66,13 @@ export default function AdminLayout({
       href: '/questions',
       icon: BookMarked,
       active: pathname.startsWith('/questions'),
+      visible: isStaff,
+    },
+    {
+      name: 'Schools',
+      href: '/schools',
+      icon: GraduationCap,
+      active: pathname.startsWith('/schools'),
       visible: isStaff,
     },
     {
