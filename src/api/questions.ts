@@ -107,3 +107,20 @@ export async function archiveQuestion(id: string): Promise<Question> {
   );
   return response.data;
 }
+
+/**
+ * Preview an AI-generated flashcard without saving it.
+ * POST /questions/flashcard-preview
+ */
+export async function previewFlashcard(payload: {
+  text: string;
+  options: { key: string; text: string }[];
+  correctOption: string;
+  explanation?: string;
+}): Promise<{ front: string; back: string }> {
+  const response = await apiClient.post<{ front: string; back: string }>(
+    '/questions/flashcard-preview',
+    payload,
+  );
+  return response.data;
+}

@@ -21,6 +21,8 @@ import {
   Save,
   Send,
   Sparkles,
+  Wand2,
+  X,
 } from 'lucide-react';
 import type {
   Question,
@@ -55,6 +57,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { RejectionReasonBanner } from './RejectionReasonBanner';
+import { previewFlashcard } from '../../api/questions';
 import { cn } from '../../lib/utils';
 
 // ============================================================================
@@ -83,7 +86,6 @@ export const createQuestionFormSchema = z
       .max(6, 'Maximum 6 options allowed'),
     correctOption: z.string().min(1, 'Please select the correct option key'),
     explanation: z.string().max(2000, 'Explanation cannot exceed 2000 characters').optional(),
-    createFlashcard: z.boolean(),
   })
   .refine(
     (data) => {
@@ -141,8 +143,10 @@ export function CreateQuestionForm({
   const [questionTab, setQuestionTab] = useState<'write' | 'preview'>('write');
   const [explanationTab, setExplanationTab] = useState<'write' | 'preview'>('write');
 
-  // Flashcard accordion expanded state
-  const [flashcardAccordionOpen, setFlashcardAccordionOpen] = useState(false);
+  // AI flashcard inline state
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [pendingCard, setPendingCard] = useState<{ front: string; back: string } | null>(null);
+  const [approvedFlashcard, setApprovedFlashcard] = useState<{ front: string; back: string } | null>(null);
 
   // Review validation feedback state
   const [reviewValidationFailed, setReviewValidationFailed] = useState(false);
@@ -169,7 +173,6 @@ export function CreateQuestionForm({
     options: initialData?.options?.length ? initialData.options : DEFAULT_OPTIONS,
     correctOption: initialData?.correctOption || 'A',
     explanation: initialData?.explanation || '',
-    createFlashcard: initialData?.hasFlashCard ?? false,
   };
 
   const form = useForm<CreateQuestionFormValues>({
@@ -275,6 +278,31 @@ export function CreateQuestionForm({
     ? correctOptionObject.text
     : `(Option ${watchedCorrectOption} text not yet specified)`;
 
+  const handleGenerateAiFlashcard = async () => {
+    const text = watchedText?.trim();
+    if (!text || text.length < 10) {
+      showToast('Enter the question text first (at least 10 characters).', 'error');
+      return;
+    }
+    setPendingCard(null);
+    setIsGeneratingAi(true);
+    try {
+      const card = await previewFlashcard({
+        text,
+        options: watchedOptions,
+        correctOption: watchedCorrectOption,
+        explanation: watchedExplanation || undefined,
+      });
+      setPendingCard(card);
+    } catch (err: any) {
+      const raw = err?.response?.data?.message ?? err?.message ?? 'AI generation failed';
+      showToast(Array.isArray(raw) ? raw.join(', ') : String(raw), 'error');
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+
   // Handle Form Submission: Draft vs Review
   const onSubmit = async (
     values: CreateQuestionFormValues,
@@ -343,7 +371,8 @@ export function CreateQuestionForm({
           correctOption: values.correctOption,
           explanation: values.explanation,
           subtopicId: values.subtopicId,
-          createFlashcard: values.createFlashcard,
+          createFlashcard: !!approvedFlashcard,
+          ...(approvedFlashcard && { approvedFlashcardFront: approvedFlashcard.front, approvedFlashcardBack: approvedFlashcard.back }),
         });
       }
 
@@ -847,7 +876,7 @@ export function CreateQuestionForm({
             )}
           </div>
 
-          {/* Section 6: Flashcard Generator Accordion */}
+          {/* Section 6: Flashcard Generator */}
           <div className="rounded-xl border-2 border-[#141827] bg-[#F8F5EF] p-5 shadow-tactile space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-start gap-3">
@@ -869,114 +898,104 @@ export function CreateQuestionForm({
                 </div>
               </div>
 
-              {/* Switch Control */}
-              <div className="flex items-center gap-3">
-                <Label htmlFor="flashcard-switch" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                  Generate Matching Flashcard
-                </Label>
-                <Controller
-                  control={form.control}
-                  name="createFlashcard"
-                  render={({ field }) => (
-                    <Switch
-                      id="flashcard-switch"
-                      checked={field.value}
-                      onCheckedChange={(val) => {
-                        field.onChange(val);
-                        setFlashcardAccordionOpen(val);
-                      }}
-                    />
-                  )}
-                />
-              </div>
+              {/* Generate button — always visible */}
+              {!approvedFlashcard && (
+                <Button
+                  type="button"
+                  onClick={handleGenerateAiFlashcard}
+                  disabled={isGeneratingAi}
+                  size="sm"
+                  className="gap-2 text-xs bg-[#141827] hover:bg-[#141827]/90 text-[#F6D86B] font-bold border-2 border-[#141827] shadow-tactile-xs active:translate-y-0.5 active:shadow-none shrink-0"
+                >
+                  {isGeneratingAi
+                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    : <Wand2 className="h-3.5 w-3.5" />}
+                  {isGeneratingAi ? 'Generating…' : '✨ Generate Flashcard'}
+                </Button>
+              )}
             </div>
 
-            {/* Expandable Accordion Body */}
-            {watchedCreateFlashcard && (
-              <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-200 space-y-4">
-                <div className="flex items-center justify-between border-t-2 border-[#141827]/10 pt-3">
-                  <span className="text-xs font-bold text-[#141827] flex items-center gap-1.5">
-                    <Layers className="h-3.5 w-3.5 text-[#141827]" />
-                    <span>Flashcard Dual-Sided Live Preview</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setFlashcardAccordionOpen(!flashcardAccordionOpen)}
-                    className="flex items-center gap-1 text-xs text-[#141827] hover:underline font-bold"
-                  >
-                    <span>{flashcardAccordionOpen ? 'Hide Cards' : 'View Cards'}</span>
-                    {flashcardAccordionOpen ? (
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    ) : (
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                </div>
+            {/* Inline result area */}
+            <div className="space-y-3">
+              {isGeneratingAi && (
+                <p className="text-[11px] text-slate-400 animate-pulse">Gemini is reading your question and answers…</p>
+              )}
 
-                {flashcardAccordionOpen && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Front of Card */}
-                    <div className="rounded-xl border-2 border-[#141827] bg-white p-4 shadow-tactile-sm flex flex-col justify-between min-h-[180px]">
-                      <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                            Front • Prompt
-                          </span>
-                          <span className="rounded bg-[#F8F5EF] border border-[#141827] px-1.5 py-0.5 text-[9px] font-bold text-[#141827]">
-                            QUESTION
-                          </span>
-                        </div>
-                        <MathMarkdown
-                          content={watchedText}
-                          placeholder="Front card inherits question prompt text and mathematical formulas."
-                        />
-                      </div>
-                      <div className="mt-4 pt-2 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
-                        <span>Side 1</span>
-                        <span>Auto-synced</span>
-                      </div>
+              {/* Pending card — accept or retry */}
+              {pendingCard && !isGeneratingAi && (
+                <div className="rounded-lg border-2 border-[#141827] bg-white p-4 shadow-tactile-sm space-y-3 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Front</p>
+                      <p className="text-xs text-[#141827] font-medium leading-relaxed">{pendingCard.front}</p>
                     </div>
-
-                    {/* Back of Card */}
-                    <div className="rounded-xl border-2 border-[#141827] bg-white p-4 shadow-tactile-sm flex flex-col justify-between min-h-[180px]">
-                      <div>
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#141827]">
-                            Back • Answer & Solution
-                          </span>
-                          <span className="rounded bg-[#F6D86B] border border-[#141827] px-1.5 py-0.5 text-[9px] font-bold text-[#141827]">
-                            CORRECT ANSWER
-                          </span>
-                        </div>
-
-                        {/* Correct Option Display */}
-                        <div className="mb-2.5 rounded-md border border-[#141827] bg-[#F6D86B]/20 p-2 text-xs font-semibold text-[#141827] flex items-start gap-2">
-                          <span className="rounded bg-[#141827] px-1.5 py-0.2 text-[10px] font-bold text-[#F6D86B] shrink-0">
-                            Option {watchedCorrectOption}
-                          </span>
-                          <span className="text-[#141827] font-medium leading-relaxed">
-                            {correctOptionText}
-                          </span>
-                        </div>
-
-                        {/* Explanation preview */}
-                        <div className="text-xs text-slate-700">
-                          <MathMarkdown
-                            content={watchedExplanation}
-                            placeholder="Back card inherits correct answer plus the step-by-step explanation."
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4 pt-2 border-t border-slate-100 text-[10px] text-slate-500 flex items-center justify-between">
-                        <span>Side 2</span>
-                        <span>Auto-synced</span>
-                      </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Back</p>
+                      <p className="text-xs text-[#141827] font-medium leading-relaxed whitespace-pre-wrap">{pendingCard.back}</p>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => { setApprovedFlashcard(pendingCard); setPendingCard(null); }}
+                      className="h-7 gap-1.5 text-xs bg-[#F6D86B] hover:bg-[#F6D86B]/90 text-[#141827] font-bold border-2 border-[#141827] shadow-tactile-xs"
+                    >
+                      <Check className="h-3.5 w-3.5 stroke-[3]" />
+                      Use this card
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={handleGenerateAiFlashcard}
+                      className="text-[11px] font-semibold text-slate-500 hover:text-[#141827] underline underline-offset-2 transition-colors"
+                    >
+                      Try again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingCard(null)}
+                      className="ml-auto text-[11px] font-semibold text-slate-400 hover:text-slate-600 underline underline-offset-2 transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Approved card */}
+              {approvedFlashcard && (
+                <div className="space-y-2 animate-in fade-in duration-150">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="rounded-lg border-2 border-[#141827] bg-white p-3 shadow-tactile-sm">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Front</p>
+                      <p className="text-xs text-[#141827] font-medium leading-relaxed">{approvedFlashcard.front}</p>
+                    </div>
+                    <div className="rounded-lg border-2 border-[#141827] bg-[#F6D86B]/20 p-3 shadow-tactile-sm">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Back</p>
+                      <p className="text-xs text-[#141827] font-medium leading-relaxed whitespace-pre-wrap">{approvedFlashcard.back}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleGenerateAiFlashcard}
+                      disabled={isGeneratingAi}
+                      className="text-[11px] font-semibold text-slate-500 hover:text-[#141827] underline underline-offset-2 transition-colors"
+                    >
+                      {isGeneratingAi ? 'Generating…' : 'Regenerate'}
+                    </button>
+                    <span className="text-slate-300">·</span>
+                    <button
+                      type="button"
+                      onClick={() => { setApprovedFlashcard(null); setPendingCard(null); }}
+                      className="text-[11px] font-semibold text-rose-400 hover:text-rose-600 underline underline-offset-2 transition-colors"
+                    >
+                      Remove card
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Section 7: Action Buttons & Draft vs Review */}
