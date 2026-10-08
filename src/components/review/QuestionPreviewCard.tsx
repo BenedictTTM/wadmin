@@ -9,6 +9,7 @@ import {
   HelpCircle,
   User,
   XCircle,
+  ShieldAlert,
 } from 'lucide-react';
 import type { Question } from '../../types/question';
 import { StatusBadge } from '../ui/StatusBadge';
@@ -163,19 +164,41 @@ export function QuestionPreviewCard({
         </div>
       </ScrollArea>
 
-      {/* Action bar */}
-      <div className="flex items-center justify-end gap-2 border-t border-slate-200 bg-white px-4 py-2.5">
+      {/* Sticky Action Bar */}
+      <div className="sticky bottom-0 z-10 flex items-center justify-between border-t-2 border-[#141827] bg-[#F8F5EF] px-6 py-3.5 shadow-tactile-sm">
         {isAdmin ? (
-          <>
-            <Button variant="outline" size="sm" onClick={() => onRejectClick(question.id)} disabled={isApproving} className="gap-1.5 text-xs">
-              <XCircle className="h-3.5 w-3.5" /> Reject
-            </Button>
-            <Button size="sm" onClick={() => onApprove(question.id)} disabled={isApproving} className="gap-1.5 text-xs bg-[#F6D86B] hover:bg-[#F6D86B]/90 text-[#141827] font-bold border-2 border-[#141827] shadow-tactile-xs active:translate-y-0.5 active:shadow-none">
-              <CheckCircle className="h-3.5 w-3.5" /> {isApproving ? 'Approving…' : 'Approve'}
-            </Button>
-          </>
+          <div className="flex w-full items-center justify-between">
+            <span className="text-xs font-bold text-[#141827]">
+              Review action for Question <span className="font-mono bg-[#F6D86B] border border-[#141827] px-1.5 py-0.2 rounded">#{question.id.slice(0, 8)}</span>
+            </span>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onRejectClick(question.id)}
+                disabled={isApproving}
+                className="gap-1.5 text-xs font-bold"
+              >
+                <XCircle className="h-4 w-4" />
+                <span>Reject ✗</span>
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onApprove(question.id)}
+                disabled={isApproving}
+                className="gap-1.5 text-xs bg-[#F6D86B] hover:bg-[#F6D86B]/90 text-[#141827] font-bold border-2 border-[#141827] shadow-tactile active:translate-y-0.5 active:shadow-none"
+              >
+                <CheckCircle className="h-4 w-4 text-[#141827]" />
+                <span>{isApproving ? 'Approving…' : 'Approve ✓'}</span>
+              </Button>
+            </div>
+          </div>
         ) : (
-          <span className="text-[11px] text-slate-400">Only admins can approve or reject.</span>
+          <div className="flex w-full items-center justify-center gap-2 text-xs text-amber-700 bg-amber-50 py-1.5 px-3 rounded border border-amber-200">
+            <ShieldAlert className="h-4 w-4" />
+            <span>Only admins can approve or reject questions.</span>
+          </div>
         )}
       </div>
     </div>

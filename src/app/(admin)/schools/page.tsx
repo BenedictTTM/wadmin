@@ -16,8 +16,6 @@ import {
   RefreshCw,
   ShieldAlert,
 } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
-import { Input } from '../../../components/ui/input';
 import { schoolsApi, SchoolItem, SchoolStats } from '../../../api/schools';
 
 const REGIONS = [
@@ -39,6 +37,28 @@ const REGIONS = [
   'Western',
   'Western North',
 ];
+
+/**
+ * Deterministic, vibrant neo-brutalist badge background color for schools without crests.
+ */
+function getSchoolBadgeColor(shortCode: string): string {
+  const colors = [
+    '#055B38', // Deep Forest Green (Prempeh)
+    '#172554', // Navy Blue (Achimota)
+    '#7C2D12', // Crimson / Brick
+    '#0F766E', // Deep Teal
+    '#4338CA', // Indigo
+    '#B45309', // Warm Amber
+    '#0369A1', // Deep Sky
+    '#9D174D', // Deep Rose
+  ];
+  if (!shortCode) return colors[0];
+  let hash = 0;
+  for (let i = 0; i < shortCode.length; i++) {
+    hash = shortCode.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
 
 export default function SchoolsAdminPage(): React.JSX.Element {
   const [schools, setSchools] = useState<SchoolItem[]>([]);
@@ -233,23 +253,23 @@ export default function SchoolsAdminPage(): React.JSX.Element {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-950 text-slate-100 overflow-y-auto">
-      {/* Top Banner / Header */}
-      <div className="border-b border-slate-800 bg-slate-900/60 backdrop-blur px-8 py-6">
+    <div className="flex flex-col h-full w-full bg-[#F5F3EC] text-[#111827] overflow-y-auto">
+      {/* ── Top Header Section (Warm Cream Canvas) ── */}
+      <div className="border-b-2 border-black bg-[#F5F3EC] px-6 sm:px-8 py-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-indigo-600/10 text-indigo-400 border border-indigo-500/20">
-                <GraduationCap className="h-6 w-6" />
+            <div className="flex items-center gap-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-[#F4D06F] text-[#111827] border-2 border-black shadow-[2.5px_2.5px_0px_#000] flex items-center justify-center shrink-0">
+                <GraduationCap className="h-6 w-6 stroke-[2.5]" />
               </div>
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#111827] flex flex-wrap items-center gap-2.5">
                   School Directory Administration
-                  <span className="text-xs font-normal text-indigo-400 bg-indigo-950/60 border border-indigo-800/40 px-2.5 py-0.5 rounded-full">
+                  <span className="inline-flex items-center px-3 py-0.5 rounded-full bg-[#F4D06F] text-[#111827] border-2 border-black font-black text-xs uppercase tracking-wider shadow-[2px_2px_0px_#000]">
                     {stats.totalSchools} Total
                   </span>
                 </h1>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs sm:text-sm font-bold text-[#4B5563] mt-1">
                   Bulk directory ingestion, local filesystem crest binary upload, and CDN asset management
                 </p>
               </div>
@@ -257,87 +277,121 @@ export default function SchoolsAdminPage(): React.JSX.Element {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={() => fetchSchools()}
-              className="text-xs border-slate-700 hover:bg-slate-800"
+              disabled={isLoading}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-[#F8F5EF] text-[#111827] border-2 border-black font-black text-xs shadow-[2px_2px_0px_#000] active:translate-y-0.5 hover:-translate-y-0.5 transition-all cursor-pointer disabled:opacity-50"
             >
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              Refresh
-            </Button>
+              <RefreshCw className={`h-4 w-4 stroke-[2.5] ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
           </div>
         </div>
 
-        {/* Stat KPI Counters */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        {/* ── Metric / Summary Cards (Structured Neo-Brutalist White Cards) ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mt-6">
+          {/* Card 1: Total Directory Size */}
           <div
             onClick={() => {
               setCrestFilter('all');
               setPage(1);
             }}
-            className={`p-4 rounded-xl border transition cursor-pointer ${
+            className={`p-5 rounded-2xl border-2 border-black transition-all cursor-pointer select-none ${
               crestFilter === 'all'
-                ? 'bg-slate-800/90 border-indigo-500/50 shadow-md shadow-indigo-500/5'
-                : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                ? 'bg-white shadow-[4px_4px_0px_#000] -translate-y-0.5 ring-2 ring-[#F4D06F]'
+                : 'bg-white shadow-[3px_3px_0px_#000] hover:-translate-y-0.5'
             }`}
           >
-            <div className="text-xs font-medium text-slate-400">Total Directory Size</div>
-            <div className="text-2xl font-bold text-white mt-1">{stats.totalSchools}</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">All ingested secondary institutions</div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase tracking-wider text-[#4B5563]">
+                Total Directory Size
+              </span>
+              {crestFilter === 'all' && (
+                <span className="px-2 py-0.5 rounded-md bg-[#F4D06F] border-[1.5px] border-black text-[10px] font-black uppercase shadow-[1px_1px_0px_#000]">
+                  Active
+                </span>
+              )}
+            </div>
+            <div className="text-3xl font-black text-[#111827] mt-2 tracking-tight">
+              {stats.totalSchools.toLocaleString()}
+            </div>
+            <div className="text-xs font-bold text-[#4B5563] mt-1">
+              All ingested secondary institutions
+            </div>
           </div>
 
+          {/* Card 2: Crests Uploaded */}
           <div
             onClick={() => {
               setCrestFilter('with-crest');
               setPage(1);
             }}
-            className={`p-4 rounded-xl border transition cursor-pointer ${
+            className={`p-5 rounded-2xl border-2 border-black transition-all cursor-pointer select-none ${
               crestFilter === 'with-crest'
-                ? 'bg-emerald-950/20 border-emerald-500/50 shadow-md shadow-emerald-500/5'
-                : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                ? 'bg-white shadow-[4px_4px_0px_#000] -translate-y-0.5 ring-2 ring-emerald-500'
+                : 'bg-white shadow-[3px_3px_0px_#000] hover:-translate-y-0.5'
             }`}
           >
-            <div className="text-xs font-medium text-emerald-400 flex items-center gap-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Crests Uploaded
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-[#4B5563]">
+                Crests Uploaded
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-950 border-[1.5px] border-black text-[11px] font-black inline-flex items-center gap-1 shadow-[1.5px_1.5px_0px_#000]">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-700 stroke-[3]" />
+                <span>
+                  {stats.totalSchools > 0
+                    ? `${Math.round((stats.totalWithCrest / stats.totalSchools) * 100)}% coverage`
+                    : '0% coverage'}
+                </span>
+              </span>
             </div>
-            <div className="text-2xl font-bold text-emerald-300 mt-1">{stats.totalWithCrest}</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              {stats.totalSchools > 0
-                ? `${Math.round((stats.totalWithCrest / stats.totalSchools) * 100)}% coverage achieved`
-                : '0% coverage'}
+            <div className="text-3xl font-black text-emerald-700 mt-2 tracking-tight">
+              {stats.totalWithCrest.toLocaleString()}
+            </div>
+            <div className="text-xs font-bold text-[#4B5563] mt-1">
+              Active crest assets deployed to CDN
             </div>
           </div>
 
+          {/* Card 3: Pending Crest Binary */}
           <div
             onClick={() => {
               setCrestFilter('missing-crest');
               setPage(1);
             }}
-            className={`p-4 rounded-xl border transition cursor-pointer ${
+            className={`p-5 rounded-2xl border-2 border-black transition-all cursor-pointer select-none ${
               crestFilter === 'missing-crest'
-                ? 'bg-amber-950/20 border-amber-500/50 shadow-md shadow-amber-500/5'
-                : 'bg-slate-900/50 border-slate-800 hover:border-slate-700'
+                ? 'bg-white shadow-[4px_4px_0px_#000] -translate-y-0.5 ring-2 ring-[#F4D06F]'
+                : 'bg-white shadow-[3px_3px_0px_#000] hover:-translate-y-0.5'
             }`}
           >
-            <div className="text-xs font-medium text-amber-400 flex items-center gap-1.5">
-              <AlertCircle className="h-3.5 w-3.5" />
-              Pending Crest Binary
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-[#4B5563]">
+                Pending Crest Binary
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full bg-[#F4D06F] text-[#111827] border-[1.5px] border-black text-[11px] font-black inline-flex items-center gap-1 shadow-[1.5px_1.5px_0px_#000]">
+                <AlertCircle className="h-3.5 w-3.5 stroke-[2.5]" />
+                <span>Action Required</span>
+              </span>
             </div>
-            <div className="text-2xl font-bold text-amber-300 mt-1">{stats.totalMissingCrest}</div>
-            <div className="text-[11px] text-slate-500 mt-0.5">Schools requiring crest image file</div>
+            <div className="text-3xl font-black text-[#111827] mt-2 tracking-tight">
+              {stats.totalMissingCrest.toLocaleString()}
+            </div>
+            <div className="text-xs font-bold text-[#4B5563] mt-1">
+              Schools requiring crest image file
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="p-8 flex-1 flex flex-col gap-6">
-        {/* Filter & Search Bar */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-slate-900/40 p-3 rounded-xl border border-slate-800/80">
+      {/* ── Main Content Area ── */}
+      <div className="p-6 sm:p-8 flex-1 flex flex-col gap-6">
+        {/* Search & Filter Bar */}
+        <div className="bg-white border-2 border-black rounded-2xl p-4 shadow-[3px_3px_0px_#000] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-            <Input
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#4B5563] stroke-[2.5]" />
+            <input
               type="text"
               placeholder="Search by school name, short code (e.g. PRESEC), slug, or region..."
               value={search}
@@ -345,64 +399,71 @@ export default function SchoolsAdminPage(): React.JSX.Element {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="pl-9 bg-slate-950 border-slate-800 text-sm focus:border-indigo-500 text-slate-100 placeholder:text-slate-500 h-9"
+              className="w-full h-11 pl-10 pr-4 bg-white border-2 border-black rounded-xl text-xs sm:text-sm font-semibold text-[#111827] placeholder:text-[#6B7280] shadow-[2px_2px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#F4D06F] transition-all"
             />
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 pl-1">
-              <Filter className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-[#4B5563]">
+              <Filter className="h-4 w-4 stroke-[2.5] text-[#111827]" />
               <span>Region:</span>
             </div>
-            <select
-              value={selectedRegion}
-              onChange={(e) => {
-                setSelectedRegion(e.target.value);
-                setPage(1);
-              }}
-              className="bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 outline-none focus:border-indigo-500"
-            >
-              {REGIONS.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={selectedRegion}
+                onChange={(e) => {
+                  setSelectedRegion(e.target.value);
+                  setPage(1);
+                }}
+                className="h-11 appearance-none bg-white border-2 border-black rounded-xl text-xs font-black text-[#111827] pl-4 pr-9 shadow-[2px_2px_0px_#000] outline-none cursor-pointer focus:ring-2 focus:ring-[#F4D06F] active:translate-y-0.5 transition-all"
+              >
+                {REGIONS.map((r) => (
+                  <option key={r} value={r} className="font-semibold text-black">
+                    {r}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black font-black text-xs">
+                ▼
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Directory Table */}
-        <div className="border border-slate-800 rounded-xl bg-slate-900/30 overflow-hidden flex-1 flex flex-col shadow-sm">
+        {/* ── Schools Data Table (White Neo-Brutalist Card Container) ── */}
+        <div className="border-[2.5px] border-black rounded-2xl bg-white shadow-[4px_4px_0px_#000] overflow-hidden flex-1 flex flex-col">
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-900/80 border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px] font-semibold">
+              <thead className="bg-[#F8F5EF] border-b-2 border-black text-[#111827] uppercase tracking-wider text-[11px] font-black">
                 <tr>
-                  <th className="py-3 px-4 w-16 text-center">Crest</th>
-                  <th className="py-3 px-4">School Details</th>
-                  <th className="py-3 px-4 w-28">Short Code</th>
-                  <th className="py-3 px-4 w-36">Region</th>
-                  <th className="py-3 px-4 max-w-xs">School Motto</th>
-                  <th className="py-3 px-4 w-24 text-right">Turf Score</th>
-                  <th className="py-3 px-4 w-32 text-center">Action</th>
+                  <th className="py-3.5 px-4 w-20 text-center">CREST</th>
+                  <th className="py-3.5 px-4">SCHOOL DETAILS</th>
+                  <th className="py-3.5 px-4 w-32">SHORT CODE</th>
+                  <th className="py-3.5 px-4 w-36">REGION</th>
+                  <th className="py-3.5 px-4 max-w-xs">SCHOOL MOTTO</th>
+                  <th className="py-3.5 px-4 w-28 text-right">TURF SCORE</th>
+                  <th className="py-3.5 px-4 w-36 text-center">ACTION</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-normal">
+              <tbody className="divide-y border-black font-normal">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center text-slate-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
-                        <span>Loading school registry records...</span>
+                    <td colSpan={7} className="py-20 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <Loader2 className="h-8 w-8 animate-spin text-[#111827] stroke-[2.5]" />
+                        <span className="text-xs font-black uppercase tracking-wider text-[#4B5563]">
+                          Loading school registry records...
+                        </span>
                       </div>
                     </td>
                   </tr>
                 ) : schools.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-16 text-center text-slate-500">
+                    <td colSpan={7} className="py-20 text-center">
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <AlertCircle className="h-6 w-6 text-slate-600" />
-                        <span className="font-medium text-slate-400">No schools match your search query</span>
-                        <span className="text-xs text-slate-600">Try adjusting your filters or search keywords</span>
+                        <AlertCircle className="h-8 w-8 text-[#4B5563] stroke-[2.5]" />
+                        <span className="font-black text-[#111827] text-sm">No schools match your search query</span>
+                        <span className="text-xs text-[#4B5563] font-medium">Try adjusting your filters or search keywords</span>
                       </div>
                     </td>
                   </tr>
@@ -412,85 +473,92 @@ export default function SchoolsAdminPage(): React.JSX.Element {
                     return (
                       <tr
                         key={school.id}
-                        className="hover:bg-slate-800/40 transition-colors group"
+                        className="even:bg-[#FAF8F2] odd:bg-white hover:bg-[#F4D06F]/15 transition-colors group border-b border-black/15 last:border-b-0"
                       >
-                        {/* Crest Thumbnail Preview */}
-                        <td className="py-3 px-4 text-center">
-                          <div className="w-10 h-10 rounded-lg border border-slate-700/60 bg-slate-950 flex items-center justify-center overflow-hidden mx-auto shadow-inner">
-                            {school.crestUrl ? (
+                        {/* Crest Column */}
+                        <td className="py-3.5 px-4 text-center">
+                          {hasCrest ? (
+                            <div className="w-11 h-11 rounded-xl border-2 border-black bg-white shadow-[2px_2px_0px_#000] overflow-hidden flex items-center justify-center p-1 mx-auto shrink-0">
                               <img
-                                src={school.crestUrl}
+                                src={school.crestUrl!}
                                 alt={`${school.name} crest`}
-                                className="w-full h-full object-contain p-0.5"
+                                className="w-full h-full object-contain"
                                 onError={(e) => {
                                   (e.target as HTMLElement).style.display = 'none';
                                 }}
                               />
-                            ) : (
-                              <div className="text-[10px] font-bold text-slate-500 uppercase">
-                                {school.shortCode.slice(0, 3)}
-                              </div>
-                            )}
-                          </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="w-11 h-11 rounded-xl border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center font-black text-xs text-white uppercase select-none mx-auto shrink-0"
+                              style={{ backgroundColor: getSchoolBadgeColor(school.shortCode || school.name) }}
+                              title={`${school.name} (${school.shortCode.slice(0, 3)})`}
+                            >
+                              <span className="drop-shadow-[0_1px_0_rgba(0,0,0,0.8)]">
+                                {(school.shortCode || 'SCH').replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
                         </td>
 
-                        {/* Name & Slug */}
-                        <td className="py-3 px-4">
-                          <div className="font-medium text-slate-100 group-hover:text-indigo-300 transition-colors">
+                        {/* School Details */}
+                        <td className="py-3.5 px-4">
+                          <div className="font-black text-[#111827] text-sm leading-snug group-hover:text-black transition-colors">
                             {school.name}
                           </div>
-                          <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                          <div className="text-[11px] text-[#4B5563] font-mono font-bold mt-0.5">
                             {school.slug}
                           </div>
                         </td>
 
                         {/* Short Code */}
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-indigo-300 font-mono font-medium text-[11px]">
+                        <td className="py-3.5 px-4">
+                          <span className="px-2.5 py-1 rounded-lg bg-white border-2 border-black text-[#111827] font-mono font-black text-xs shadow-[1.5px_1.5px_0px_#000] inline-block">
                             {school.shortCode}
                           </span>
                         </td>
 
                         {/* Region */}
-                        <td className="py-3 px-4 text-slate-300">
+                        <td className="py-3.5 px-4">
                           {school.region ? (
-                            <span className="inline-block px-2 py-0.5 rounded-full bg-slate-800/60 text-slate-400 text-[11px]">
+                            <span className="inline-block px-2.5 py-1 rounded-full bg-[#F5F3EC] border-[1.5px] border-black text-[#111827] text-xs font-bold shadow-[1px_1px_0px_#000]">
                               {school.region}
                             </span>
                           ) : (
-                            <span className="text-slate-600 italic">Unassigned</span>
+                            <span className="text-[#6B7280] italic text-xs font-medium">Unassigned</span>
                           )}
                         </td>
 
                         {/* Motto */}
-                        <td className="py-3 px-4 max-w-xs truncate text-slate-400" title={school.motto || ''}>
+                        <td className="py-3.5 px-4 max-w-xs truncate" title={school.motto || ''}>
                           {school.motto ? (
-                            <span className="italic text-slate-300 font-serif">"{school.motto}"</span>
+                            <span className="italic font-bold text-[#111827] font-serif text-xs">
+                              "{school.motto}"
+                            </span>
                           ) : (
-                            <span className="text-slate-600 italic">No motto configured</span>
+                            <span className="text-[#9CA3AF] italic text-xs">No motto configured</span>
                           )}
                         </td>
 
                         {/* Turf Score */}
-                        <td className="py-3 px-4 text-right font-mono text-slate-300">
+                        <td className="py-3.5 px-4 text-right font-mono font-black text-[#111827] text-sm">
                           {school.turfScore}
                         </td>
 
-                        {/* Actions */}
-                        <td className="py-3 px-4 text-center">
-                          <Button
-                            size="sm"
-                            variant={hasCrest ? 'outline' : 'default'}
+                        {/* Action Buttons */}
+                        <td className="py-3.5 px-4 text-center">
+                          <button
+                            type="button"
                             onClick={() => openUploadModal(school)}
-                            className={`text-xs h-7 px-2.5 ${
+                            className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border-2 border-black font-black text-xs shadow-[2px_2px_0px_#000] active:translate-y-0.5 hover:-translate-y-0.5 transition-all cursor-pointer ${
                               hasCrest
-                                ? 'border-slate-700 hover:border-indigo-500 text-slate-300'
-                                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm'
+                                ? 'bg-white hover:bg-[#F8F5EF] text-[#111827]'
+                                : 'bg-[#F4D06F] hover:bg-[#F6D86B] text-[#111827]'
                             }`}
                           >
-                            <Upload className="h-3 w-3 mr-1" />
-                            {hasCrest ? 'Update Crest' : 'Upload Crest'}
-                          </Button>
+                            <Upload className="h-3.5 w-3.5 stroke-[2.5]" />
+                            <span>{hasCrest ? 'Update Crest' : 'Upload Crest'}</span>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -501,83 +569,83 @@ export default function SchoolsAdminPage(): React.JSX.Element {
           </div>
 
           {/* Pagination Footer */}
-          <div className="px-4 py-3 bg-slate-900/70 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+          <div className="px-6 py-4 bg-[#F8F5EF] border-t-2 border-black flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-bold text-[#111827]">
             <div>
-              Showing <span className="font-semibold text-slate-200">{schools.length}</span> of{' '}
-              <span className="font-semibold text-slate-200">{totalCount}</span> schools (Page {page} of{' '}
+              Showing <span className="font-black text-black">{schools.length}</span> of{' '}
+              <span className="font-black text-black">{totalCount}</span> schools (Page {page} of{' '}
               {totalPages})
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <Button
-                variant="outline"
-                size="sm"
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="h-7 px-2 border-slate-700 disabled:opacity-40"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-[#F8F5EF] border-2 border-black text-[#111827] font-black shadow-[2px_2px_0px_#000] active:translate-y-0.5 hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:hover:translate-y-0 disabled:shadow-none cursor-pointer"
               >
-                <ChevronLeft className="h-3.5 w-3.5 mr-0.5" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
+                <ChevronLeft className="h-4 w-4 stroke-[2.5]" />
+                <span>Previous</span>
+              </button>
+              <button
+                type="button"
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="h-7 px-2 border-slate-700 disabled:opacity-40"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white hover:bg-[#F8F5EF] border-2 border-black text-[#111827] font-black shadow-[2px_2px_0px_#000] active:translate-y-0.5 hover:-translate-y-0.5 transition-all disabled:opacity-40 disabled:hover:translate-y-0 disabled:shadow-none cursor-pointer"
               >
-                Next
-                <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
-              </Button>
+                <span>Next</span>
+                <ChevronRight className="h-4 w-4 stroke-[2.5]" />
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Crest Binary Upload & Motto Administration Modal */}
+      {/* ── Crest Binary Upload & Motto Administration Modal (Neo-Brutalist) ── */}
       {activeSchool && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="relative w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="relative w-full max-w-xl bg-white border-[3px] border-black rounded-3xl shadow-[8px_8px_0px_#000] overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-lg bg-indigo-600/10 text-indigo-400 border border-indigo-500/20">
-                  <Upload className="h-4 w-4" />
+            <div className="flex items-center justify-between px-6 py-4.5 border-b-2 border-black bg-[#F8F5EF]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#F4D06F] text-[#111827] border-2 border-black shadow-[1.5px_1.5px_0px_#000] flex items-center justify-center">
+                  <Upload className="h-4.5 w-4.5 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Upload School Crest</h3>
-                  <p className="text-[11px] text-slate-400">{activeSchool.name}</p>
+                  <h3 className="text-base font-black text-[#111827]">Upload School Crest</h3>
+                  <p className="text-xs font-bold text-[#4B5563]">{activeSchool.name}</p>
                 </div>
               </div>
 
               <button
+                type="button"
                 onClick={closeUploadModal}
                 disabled={isUploading}
-                className="text-slate-400 hover:text-slate-200 transition-colors p-1"
+                className="w-8 h-8 rounded-lg bg-white hover:bg-[#F4D06F] text-[#111827] border-2 border-black shadow-[2px_2px_0px_#000] active:translate-y-0.5 transition-all flex items-center justify-center cursor-pointer"
+                title="Close modal"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 stroke-[3]" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+            <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh] bg-white">
               {/* School Meta Snapshot */}
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-4 rounded-2xl bg-[#F5F3EC] border-2 border-black text-xs shadow-[2px_2px_0px_#000]">
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Short Code</span>
-                  <span className="font-mono font-medium text-indigo-300">{activeSchool.shortCode}</span>
+                  <span className="text-[#4B5563] block text-[11px] font-black uppercase tracking-wider">Short Code</span>
+                  <span className="font-mono font-black text-sm text-[#111827]">{activeSchool.shortCode}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Slug Identifier</span>
-                  <span className="font-mono text-slate-300">{activeSchool.slug}</span>
+                  <span className="text-[#4B5563] block text-[11px] font-black uppercase tracking-wider">Slug Identifier</span>
+                  <span className="font-mono font-bold text-xs text-[#111827]">{activeSchool.slug}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Region</span>
-                  <span className="text-slate-300">{activeSchool.region || 'Unassigned'}</span>
+                  <span className="text-[#4B5563] block text-[11px] font-black uppercase tracking-wider">Region</span>
+                  <span className="font-bold text-xs text-[#111827]">{activeSchool.region || 'Unassigned'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Destination S3 Key</span>
-                  <span className="font-mono text-[11px] text-slate-400">
+                  <span className="text-[#4B5563] block text-[11px] font-black uppercase tracking-wider">Destination Asset Key</span>
+                  <span className="font-mono text-[11px] font-bold text-[#4B5563]">
                     crests/{activeSchool.slug}.webp
                   </span>
                 </div>
@@ -585,8 +653,8 @@ export default function SchoolsAdminPage(): React.JSX.Element {
 
               {/* Local File System Drag & Drop Area */}
               <div>
-                <label className="block text-xs font-medium text-slate-200 mb-2">
-                  Crest Binary File <span className="text-rose-400">*</span>
+                <label className="block text-xs font-black text-[#111827] mb-2 uppercase tracking-wide">
+                  Crest Binary File <span className="text-rose-600">*</span>
                 </label>
 
                 <div
@@ -594,12 +662,12 @@ export default function SchoolsAdminPage(): React.JSX.Element {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+                  className={`relative flex flex-col items-center justify-center p-6 border-2 border-dashed border-black rounded-2xl cursor-pointer transition-all duration-200 ${
                     isDragging
-                      ? 'border-indigo-400 bg-indigo-950/30 scale-[1.01]'
+                      ? 'bg-[#F4D06F]/20 scale-[1.01]'
                       : previewUrl
-                      ? 'border-indigo-500/40 bg-slate-950/60'
-                      : 'border-slate-700 bg-slate-950/40 hover:border-slate-600 hover:bg-slate-950/70'
+                      ? 'bg-[#F8F5EF]'
+                      : 'bg-[#FAF8F2] hover:bg-white'
                   }`}
                 >
                   <input
@@ -612,7 +680,7 @@ export default function SchoolsAdminPage(): React.JSX.Element {
 
                   {previewUrl ? (
                     <div className="flex flex-col items-center gap-3">
-                      <div className="w-24 h-24 rounded-xl border border-slate-700 bg-slate-900 p-2 flex items-center justify-center shadow-lg">
+                      <div className="w-28 h-28 rounded-2xl border-2 border-black bg-white p-2 flex items-center justify-center shadow-[3px_3px_0px_#000]">
                         <img
                           src={previewUrl}
                           alt="Crest preview"
@@ -620,30 +688,30 @@ export default function SchoolsAdminPage(): React.JSX.Element {
                         />
                       </div>
                       <div className="text-center">
-                        <p className="text-xs font-medium text-slate-200">
+                        <p className="text-xs font-black text-[#111827]">
                           {selectedFile ? selectedFile.name : 'Current Registered Crest'}
                         </p>
                         {selectedFile && (
-                          <p className="text-[11px] text-slate-400">
+                          <p className="text-[11px] font-bold text-[#4B5563]">
                             {(selectedFile.size / 1024).toFixed(1)} KB &bull; {selectedFile.type}
                           </p>
                         )}
-                        <span className="mt-1.5 inline-block text-[11px] text-indigo-400 hover:underline">
+                        <span className="mt-1.5 inline-block text-[11px] font-black text-[#111827] underline decoration-2 decoration-[#F4D06F] hover:text-black">
                           Click or drag another image to replace
                         </span>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center text-center gap-2">
-                      <div className="p-3 rounded-full bg-slate-800 text-slate-400">
-                        <FileImage className="h-6 w-6" />
+                    <div className="flex flex-col items-center text-center gap-2.5">
+                      <div className="w-12 h-12 rounded-2xl bg-white border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center text-[#111827]">
+                        <FileImage className="h-6 w-6 stroke-[2]" />
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-slate-200">
+                        <p className="text-xs font-black text-[#111827]">
                           Drag and drop crest image here, or{' '}
-                          <span className="text-indigo-400 hover:underline">browse files</span>
+                          <span className="underline decoration-2 decoration-[#F4D06F]">browse files</span>
                         </p>
-                        <p className="text-[11px] text-slate-500 mt-1">
+                        <p className="text-[11px] font-bold text-[#4B5563] mt-1">
                           Direct local binary upload only. Supported: WebP, PNG, JPEG, SVG (Max 5MB).
                         </p>
                       </div>
@@ -652,8 +720,8 @@ export default function SchoolsAdminPage(): React.JSX.Element {
                 </div>
 
                 {/* Strict Enforcement Notice */}
-                <div className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-400">
-                  <ShieldAlert className="h-3.5 w-3.5 text-indigo-400" />
+                <div className="mt-2.5 flex items-center gap-2 text-xs font-bold text-[#4B5563]">
+                  <ShieldAlert className="h-4 w-4 text-[#111827] stroke-[2.5]" />
                   <span>
                     Direct local file upload enforced. Pasting external image URLs is disabled.
                   </span>
@@ -662,17 +730,17 @@ export default function SchoolsAdminPage(): React.JSX.Element {
 
               {/* School Motto Field */}
               <div>
-                <label className="block text-xs font-medium text-slate-200 mb-1.5">
+                <label className="block text-xs font-black text-[#111827] mb-1.5 uppercase tracking-wide">
                   School Motto
                 </label>
-                <Input
+                <input
                   type="text"
                   placeholder="e.g. In Lumine Tuo Videbimus Lumen"
                   value={editedMotto}
                   onChange={(e) => setEditedMotto(e.target.value)}
-                  className="bg-slate-950 border-slate-800 text-xs text-slate-100 placeholder:text-slate-600 focus:border-indigo-500 font-serif"
+                  className="w-full h-11 px-3.5 bg-white border-2 border-black rounded-xl text-xs sm:text-sm font-semibold text-[#111827] placeholder:text-[#9CA3AF] shadow-[2px_2px_0px_#000] focus:outline-none focus:ring-2 focus:ring-[#F4D06F] font-serif transition-all"
                 />
-                <p className="text-[11px] text-slate-500 mt-1">
+                <p className="text-[11px] font-bold text-[#4B5563] mt-1">
                   Persisted to PostgreSQL alongside crest storage CDN URL.
                 </p>
               </div>
@@ -680,16 +748,16 @@ export default function SchoolsAdminPage(): React.JSX.Element {
               {/* Status & Feedback message */}
               {statusMessage && (
                 <div
-                  className={`p-3 rounded-lg text-xs flex items-center gap-2 ${
+                  className={`p-3.5 rounded-xl text-xs font-bold flex items-center gap-2.5 border-2 border-black shadow-[2px_2px_0px_#000] ${
                     statusMessage.isError
-                      ? 'bg-rose-950/30 text-rose-300 border border-rose-800/40'
-                      : 'bg-emerald-950/30 text-emerald-300 border border-emerald-800/40'
+                      ? 'bg-rose-100 text-rose-950'
+                      : 'bg-emerald-100 text-emerald-950'
                   }`}
                 >
                   {statusMessage.isError ? (
-                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-700 stroke-[3]" />
                   ) : (
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-700 stroke-[3]" />
                   )}
                   <span>{statusMessage.text}</span>
                 </div>
@@ -697,42 +765,41 @@ export default function SchoolsAdminPage(): React.JSX.Element {
 
               {/* Upload Progress Tracker */}
               {isUploading && (
-                <div className="p-3 rounded-lg bg-indigo-950/30 border border-indigo-800/40 flex items-center gap-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-indigo-400" />
-                  <span className="text-xs text-indigo-300 font-medium">{uploadProgress}</span>
+                <div className="p-3.5 rounded-xl bg-[#F4D06F]/30 border-2 border-black flex items-center gap-3 shadow-[2px_2px_0px_#000]">
+                  <Loader2 className="h-5 w-5 animate-spin text-[#111827] stroke-[3]" />
+                  <span className="text-xs text-[#111827] font-black">{uploadProgress}</span>
                 </div>
               )}
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-800 bg-slate-900/90">
-              <Button
-                variant="outline"
-                size="sm"
+            <div className="flex items-center justify-end gap-3 px-6 py-4.5 border-t-2 border-black bg-[#F8F5EF]">
+              <button
+                type="button"
                 onClick={closeUploadModal}
                 disabled={isUploading}
-                className="text-xs border-slate-700"
+                className="px-4 py-2 rounded-xl bg-white hover:bg-[#F8F5EF] text-[#111827] border-2 border-black font-black text-xs shadow-[2px_2px_0px_#000] active:translate-y-0.5 hover:-translate-y-0.5 transition-all cursor-pointer"
               >
                 Cancel
-              </Button>
-              <Button
-                size="sm"
+              </button>
+              <button
+                type="button"
                 onClick={handleSaveAndUpload}
                 disabled={isUploading || (!selectedFile && editedMotto === (activeSchool.motto || ''))}
-                className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white shadow-md"
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#F4D06F] hover:bg-[#F6D86B] text-[#111827] border-2 border-black font-black text-xs shadow-[3px_3px_0px_#000] active:translate-y-0.5 hover:-translate-y-0.5 transition-all cursor-pointer disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-[2px_2px_0px_#000]"
               >
                 {isUploading ? (
                   <>
-                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    Processing Upload...
+                    <Loader2 className="h-4 w-4 animate-spin stroke-[2.5]" />
+                    <span>Processing Upload...</span>
                   </>
                 ) : (
                   <>
-                    <Upload className="h-3.5 w-3.5 mr-1.5" />
-                    Save & Upload
+                    <Upload className="h-4 w-4 stroke-[2.5]" />
+                    <span>Save & Upload</span>
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

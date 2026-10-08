@@ -86,6 +86,7 @@ export const createQuestionFormSchema = z
       .max(6, 'Maximum 6 options allowed'),
     correctOption: z.string().min(1, 'Please select the correct option key'),
     explanation: z.string().max(2000, 'Explanation cannot exceed 2000 characters').optional(),
+    createFlashcard: z.boolean().optional(),
   })
   .refine(
     (data) => {
@@ -147,6 +148,7 @@ export function CreateQuestionForm({
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
   const [pendingCard, setPendingCard] = useState<{ front: string; back: string } | null>(null);
   const [approvedFlashcard, setApprovedFlashcard] = useState<{ front: string; back: string } | null>(null);
+  const [flashcardAccordionOpen, setFlashcardAccordionOpen] = useState(false);
 
   // Review validation feedback state
   const [reviewValidationFailed, setReviewValidationFailed] = useState(false);
@@ -173,6 +175,7 @@ export function CreateQuestionForm({
     options: initialData?.options?.length ? initialData.options : DEFAULT_OPTIONS,
     correctOption: initialData?.correctOption || 'A',
     explanation: initialData?.explanation || '',
+    createFlashcard: false,
   };
 
   const form = useForm<CreateQuestionFormValues>({
@@ -898,22 +901,129 @@ export function CreateQuestionForm({
                 </div>
               </div>
 
-              {/* Generate button — always visible */}
-              {!approvedFlashcard && (
-                <Button
-                  type="button"
-                  onClick={handleGenerateAiFlashcard}
-                  disabled={isGeneratingAi}
-                  size="sm"
-                  className="gap-2 text-xs bg-[#141827] hover:bg-[#141827]/90 text-[#F6D86B] font-bold border-2 border-[#141827] shadow-tactile-xs active:translate-y-0.5 active:shadow-none shrink-0"
-                >
-                  {isGeneratingAi
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    : <Wand2 className="h-3.5 w-3.5" />}
-                  {isGeneratingAi ? 'Generating…' : '✨ Generate Flashcard'}
-                </Button>
-              )}
+              <div className="flex items-center gap-3">
+                <Label htmlFor="flashcard-switch" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                  Generate Matching Flashcard
+                </Label>
+                <Controller
+                  control={form.control}
+                  name="createFlashcard"
+                  render={({ field }) => (
+                    <Switch
+                      id="flashcard-switch"
+                      checked={field.value}
+                      onCheckedChange={(val) => {
+                        field.onChange(val);
+                        setFlashcardAccordionOpen(val);
+                      }}
+                    />
+                  )}
+                />
+              </div>
             </div>
+
+            {/* Expandable Accordion Body */}
+            {watchedCreateFlashcard && (
+              <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-200 space-y-4">
+                <div className="flex items-center justify-between border-t-2 border-[#141827]/10 pt-3">
+                  <span className="text-xs font-bold text-[#141827] flex items-center gap-1.5">
+                    <Layers className="h-3.5 w-3.5 text-[#141827]" />
+                    <span>Flashcard Dual-Sided Live Preview</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {!approvedFlashcard && (
+                      <Button
+                        type="button"
+                        onClick={handleGenerateAiFlashcard}
+                        disabled={isGeneratingAi}
+                        size="sm"
+                        className="gap-2 text-xs bg-[#141827] hover:bg-[#141827]/90 text-[#F6D86B] font-bold border-2 border-[#141827] shadow-tactile-xs active:translate-y-0.5 active:shadow-none shrink-0"
+                      >
+                        {isGeneratingAi
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : <Wand2 className="h-3.5 w-3.5" />}
+                        {isGeneratingAi ? 'Generating…' : '✨ Generate AI Card'}
+                      </Button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setFlashcardAccordionOpen(!flashcardAccordionOpen)}
+                      className="flex items-center gap-1 text-xs text-[#141827] hover:underline font-bold"
+                    >
+                      <span>{flashcardAccordionOpen ? 'Hide Cards' : 'View Cards'}</span>
+                      {flashcardAccordionOpen ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {flashcardAccordionOpen && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Front of Card */}
+                    <div className="rounded-xl border-2 border-[#141827] bg-white p-4 shadow-tactile-sm flex flex-col justify-between min-h-[180px]">
+                      <div>
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Front • Prompt
+                          </span>
+                          <span className="rounded bg-[#F8F5EF] border border-[#141827] px-1.5 py-0.5 text-[9px] font-bold text-[#141827]">
+                            QUESTION
+                          </span>
+                        </div>
+                        <MathMarkdown
+                          content={watchedText}
+                          placeholder="Front card inherits question prompt text and mathematical formulas."
+                        />
+                      </div>
+                      <div className="mt-4 pt-2 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
+                        <span>Side 1</span>
+                        <span>Auto-synced</span>
+                      </div>
+                    </div>
+
+                    {/* Back of Card */}
+                    <div className="rounded-xl border-2 border-[#141827] bg-white p-4 shadow-tactile-sm flex flex-col justify-between min-h-[180px]">
+                      <div>
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#141827]">
+                            Back • Answer & Solution
+                          </span>
+                          <span className="rounded bg-[#F6D86B] border border-[#141827] px-1.5 py-0.5 text-[9px] font-bold text-[#141827]">
+                            CORRECT ANSWER
+                          </span>
+                        </div>
+
+                        {/* Correct Option Display */}
+                        <div className="mb-2.5 rounded-md border border-[#141827] bg-[#F6D86B]/20 p-2 text-xs font-semibold text-[#141827] flex items-start gap-2">
+                          <span className="rounded bg-[#141827] px-1.5 py-0.2 text-[10px] font-bold text-[#F6D86B] shrink-0">
+                            Option {watchedCorrectOption}
+                          </span>
+                          <span className="text-[#141827] font-medium leading-relaxed">
+                            {correctOptionText}
+                          </span>
+                        </div>
+
+                        {/* Explanation preview */}
+                        <div className="text-xs text-slate-700">
+                          <MathMarkdown
+                            content={watchedExplanation}
+                            placeholder="Back card inherits correct answer plus the step-by-step explanation."
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 pt-2 border-t border-slate-100 text-[10px] text-slate-500 flex items-center justify-between">
+                        <span>Side 2</span>
+                        <span>Auto-synced</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Inline result area */}
             <div className="space-y-3">
