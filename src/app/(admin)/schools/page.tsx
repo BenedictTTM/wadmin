@@ -15,8 +15,10 @@ import {
   ChevronRight,
   RefreshCw,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import { schoolsApi, SchoolItem, SchoolStats } from '../../../api/schools';
+import { CrestBackgroundCleanerModal } from '../../../components/schools';
 
 const REGIONS = [
   'All Regions',
@@ -85,6 +87,10 @@ export default function SchoolsAdminPage(): React.JSX.Element {
   const [uploadProgress, setUploadProgress] = useState<string>('');
   const [statusMessage, setStatusMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
+  // Background Remover Interceptor State
+  const [cleanerRawFile, setCleanerRawFile] = useState<File | null>(null);
+  const [isCleanerOpen, setIsCleanerOpen] = useState<boolean>(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchSchools = useCallback(async () => {
@@ -125,6 +131,8 @@ export default function SchoolsAdminPage(): React.JSX.Element {
     setPreviewUrl(school.crestUrl || null);
     setStatusMessage(null);
     setUploadProgress('');
+    setIsCleanerOpen(false);
+    setCleanerRawFile(null);
   };
 
   const closeUploadModal = () => {
@@ -137,6 +145,16 @@ export default function SchoolsAdminPage(): React.JSX.Element {
     setStatusMessage(null);
     setUploadProgress('');
     setIsUploading(false);
+    setIsCleanerOpen(false);
+    setCleanerRawFile(null);
+  };
+
+  const applySelectedFile = (file: File) => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
   const validateAndSetFile = (file: File) => {
@@ -159,12 +177,13 @@ export default function SchoolsAdminPage(): React.JSX.Element {
       return;
     }
 
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
+    // SVG files are vectors; for raster images, intercept with AI background remover
+    if (file.type === 'image/svg+xml') {
+      applySelectedFile(file);
+    } else {
+      setCleanerRawFile(file);
+      setIsCleanerOpen(true);
     }
-
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -696,6 +715,22 @@ export default function SchoolsAdminPage(): React.JSX.Element {
                             {(selectedFile.size / 1024).toFixed(1)} KB &bull; {selectedFile.type}
                           </p>
                         )}
+                        {selectedFile && (
+                          <div className="mt-2 flex items-center justify-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCleanerRawFile(selectedFile);
+                                setIsCleanerOpen(true);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#F4D06F] hover:bg-[#F6D86B] text-[#111827] border-[1.5px] border-black text-[11px] font-black shadow-[1.5px_1.5px_0px_#000] active:translate-y-0.5 transition-all cursor-pointer"
+                            >
+                              <Sparkles className="h-3.5 w-3.5 stroke-[2.5]" />
+                              <span>AI Background Remover</span>
+                            </button>
+                          </div>
+                        )}
                         <span className="mt-1.5 inline-block text-[11px] font-black text-[#111827] underline decoration-2 decoration-[#F4D06F] hover:text-black">
                           Click or drag another image to replace
                         </span>
@@ -804,6 +839,22 @@ export default function SchoolsAdminPage(): React.JSX.Element {
           </div>
         </div>
       )}
+
+      {/* ── Client-Side AI Crest Background Remover Interceptor Modal ── */}
+      <CrestBackgroundCleanerModal
+        file={cleanerRawFile}
+        isOpen={isCleanerOpen}
+        onClose={() => {
+          setIsCleanerOpen(false);
+          setCleanerRawFile(null);
+        }}
+        onUpload={(cleanedOrRawFile) => {
+          applySelectedFile(cleanedOrRawFile);
+          setIsCleanerOpen(false);
+          setCleanerRawFile(null);
+        }}
+        schoolName={activeSchool?.name}
+      />
     </div>
   );
 }
